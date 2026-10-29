@@ -6,6 +6,7 @@ import { AboutSection } from '@/components/about'
 import { Gallery } from '@/components/gallery'
 import { ContactSection } from '@/components/contact'
 import { Footer } from '@/components/footer'
+import { PortfolioChatbot } from '@/components/portfolio-chatbot'
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
       <Gallery />
       <ContactSection />
       <Footer />
+      <PortfolioChatbot />
     </main>
   )
 }
