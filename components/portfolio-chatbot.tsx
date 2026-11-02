@@ -56,14 +56,63 @@ function getAssistantReply(question: string) {
 const chatHistoryKey = 'whyte-portfolio-chat-history-v1'
 const chatMemoryPreferenceKey = 'whyte-portfolio-chat-memory-v1'
 const maxSavedMessages = 40
+
 export function PortfolioChatbot() {
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage])
   const endOfMessagesRef = useRef<HTMLDivElement>(null)
-
   const [rememberOnDevice, setRememberOnDevice] = useState(false)
   const [historyReady, setHistoryReady] = useState(false)
+
+  useEffect(() => {
+    try {
+      const shouldRemember = window.localStorage.getItem(chatMemoryPreferenceKey) === 'true'
+      setRememberOnDevice(shouldRemember)
+
+      if (shouldRemember) {
+        const storedHistory = window.localStorage.getItem(chatHistoryKey)
+        if (storedHistory) {
+          const parsedHistory: unknown = JSON.parse(storedHistory)
+          if (
+            Array.isArray(parsedHistory) &&
+            parsedHistory.length > 0 &&
+            parsedHistory.every(
+              (message): message is ChatMessage =>
+                typeof message === 'object' &&
+                message !== null &&
+                'role' in message &&
+                (message.role === 'assistant' || message.role === 'visitor') &&
+                'text' in message &&
+                typeof message.text === 'string',
+            )
+          ) {
+            setMessages(parsedHistory.slice(-maxSavedMessages))
+          }
+        }
+      }
+    } catch {
+      // Storage can be unavailable in private browsing; keep the chat usable in memory.
+    } finally {
+      setHistoryReady(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!historyReady) return
+
+    try {
+      window.localStorage.setItem(chatMemoryPreferenceKey, String(rememberOnDevice))
+      if (rememberOnDevice) {
+        window.localStorage.setItem(chatHistoryKey, JSON.stringify(messages.slice(-maxSavedMessages)))
+      } else {
+        window.localStorage.removeItem(chatHistoryKey)
+      }
+    } catch {
+      setRememberOnDevice(false)
+    }
+  }, [historyReady, messages, rememberOnDevice])
+
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isOpen])
